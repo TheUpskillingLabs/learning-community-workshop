@@ -60,6 +60,7 @@ export default function Worksheet({ tableId }: { tableId: string }) {
   if (notFound) {
     return (
       <main className="wrap">
+        <div className="eyebrow eyebrow-teal">Worksheet</div>
         <h1>Table not found</h1>
         <p className="lead">
           This worksheet link doesn&apos;t match a table. Head back to the{" "}
@@ -71,7 +72,7 @@ export default function Worksheet({ tableId }: { tableId: string }) {
 
   return (
     <main className="wrap">
-      <div className="eyebrow">
+      <div className="eyebrow eyebrow-teal">
         {code} · {label}
       </div>
       <h1>Your six-box worksheet</h1>
@@ -83,10 +84,11 @@ export default function Worksheet({ tableId }: { tableId: string }) {
       <form onSubmit={save}>
         {SIX_BOXES.map((b) => (
           <div key={b.key} className="card">
-            <label htmlFor={b.key}>
-              <span className="pill">{b.num}</span> {b.title}
-              <span className="help">{b.help}</span>
+            <label htmlFor={b.key} className="box-head">
+              <span className="idx tabular-nums">{b.num}</span>
+              <span className="box-title-text">{b.title}</span>
             </label>
+            <span className="help">{b.help}</span>
             <textarea
               id={b.key}
               maxLength={MAX_FIELD_LEN}
@@ -100,13 +102,15 @@ export default function Worksheet({ tableId }: { tableId: string }) {
 
         {error && <div className="notice err">{error}</div>}
 
-        <div className="row" style={{ marginTop: 16 }}>
+        <div className="row" style={{ marginTop: 20 }}>
           <button type="submit" disabled={status === "saving"}>
             {status === "saving" ? "Saving…" : "Save worksheet"}
           </button>
-          {status === "saved" && <span className="pill">Saved ✓</span>}
+          {status === "saved" && (
+            <span className="status active">Saved</span>
+          )}
         </div>
-        <p className="help" style={{ marginTop: 10 }}>
+        <p className="help" style={{ marginTop: 12 }}>
           Tip: save as you go. When the facilitator picks your table for the
           showcase, whatever is saved here appears on the big screen.
         </p>

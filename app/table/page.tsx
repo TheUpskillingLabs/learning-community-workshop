@@ -22,7 +22,7 @@ export default function TablePicker() {
 
   return (
     <main className="wrap">
-      <div className="eyebrow">Table worksheet</div>
+      <div className="eyebrow eyebrow-teal">Table worksheet</div>
       <h1>Find your table</h1>
       <p className="lead">
         One person per table: pick your table below to open your group&apos;s
@@ -36,8 +36,13 @@ export default function TablePicker() {
       ) : (
         <div className="grid">
           {tables.map((t) => (
-            <Link key={t.id} className="btn secondary" href={`/table/${t.id}`}>
-              <strong>{t.code}</strong> — {t.label}
+            <Link
+              key={t.id}
+              className="card tappable table-pick"
+              href={`/table/${t.id}`}
+            >
+              <span className="idx tabular-nums">{t.code}</span>
+              <span className="table-pick-label">{t.label}</span>
             </Link>
           ))}
         </div>
