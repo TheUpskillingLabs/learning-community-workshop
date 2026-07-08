@@ -166,7 +166,7 @@ export default function AdminPage() {
   if (!authed) {
     return (
       <main className="wrap">
-        <div className="eyebrow">Facilitator</div>
+        <div className="eyebrow eyebrow-teal">Facilitator</div>
         <h1>Admin</h1>
         <form onSubmit={login} className="card">
           <label htmlFor="pw">Password</label>
@@ -190,9 +190,12 @@ export default function AdminPage() {
 
   return (
     <main className="wrap wrap-wide">
-      <div className="row" style={{ justifyContent: "space-between" }}>
-        <div className="eyebrow">Facilitator · Admin</div>
-        <button className="secondary" onClick={logout}>
+      <div
+        className="row"
+        style={{ justifyContent: "space-between", alignItems: "center" }}
+      >
+        <div className="eyebrow eyebrow-teal">Facilitator · Admin</div>
+        <button className="secondary btn-sm" onClick={logout}>
           Log out
         </button>
       </div>
@@ -218,7 +221,7 @@ export default function AdminPage() {
               alt="Join QR code"
               width={180}
               height={180}
-              style={{ borderRadius: 12, background: "#fff", padding: 8 }}
+              style={{ borderRadius: 14, background: "#fff", padding: 8 }}
             />
             <div>
               <div className="pill">{session.name}</div>
@@ -300,7 +303,7 @@ export default function AdminPage() {
                         }
                       >
                         {state?.showcasedTableId === t.id
-                          ? "On screen ✓"
+                          ? "On screen"
                           : "Showcase"}
                       </button>
                     </div>

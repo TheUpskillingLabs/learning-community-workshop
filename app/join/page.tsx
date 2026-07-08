@@ -81,10 +81,12 @@ export default function JoinPage() {
   if (!sessionId) {
     return (
       <main className="wrap">
-        <h1>No open session</h1>
+        <div className="eyebrow eyebrow-teal">Join</div>
+        <h1>No open session yet</h1>
         <p className="lead">
           The facilitator hasn&apos;t opened a session yet, or this link has
-          expired. Hang tight and re-scan the QR code when it appears on screen.
+          expired. Hang tight and re-scan the QR code when it appears on the
+          screen.
         </p>
       </main>
     );
@@ -93,17 +95,17 @@ export default function JoinPage() {
   if (status === "done") {
     return (
       <main className="wrap">
-        <div className="eyebrow">You&apos;re in</div>
-        <h1>Thanks, {handle || "friend"}! 🎉</h1>
+        <div className="eyebrow eyebrow-teal">You&apos;re in</div>
+        <h1>Thanks, {handle || "friend"}.</h1>
         <p className="lead">
-          Your answers are in. In a moment you&apos;ll be grouped with a few
+          Your answers are saved. In a moment you&apos;ll be grouped with a few
           people who serve similar learners — watch the screen for your table.
         </p>
         <div className="notice ok">
-          You can close this page. If you want to change an answer, just submit
-          the form again from this device.
+          You can close this page. To change an answer, just submit the form
+          again from this device.
         </div>
-        <p>
+        <p style={{ marginTop: 20 }}>
           <button className="secondary" onClick={() => setStatus("idle")}>
             Edit my answers
           </button>
@@ -114,7 +116,7 @@ export default function JoinPage() {
 
   return (
     <main className="wrap">
-      <div className="eyebrow">
+      <div className="eyebrow eyebrow-teal">
         {sessionName || "Open Learning Community Workshop"}
       </div>
       <h1>Tell us three things</h1>
@@ -124,10 +126,8 @@ export default function JoinPage() {
       </p>
 
       <form onSubmit={submit} className="card">
-        <label htmlFor="handle">
-          Your name or a handle
-          <span className="help">Shown on the table-assignment screen.</span>
-        </label>
+        <label htmlFor="handle">Your name or a handle</label>
+        <span className="help">Shown on the table-assignment screen.</span>
         <input
           id="handle"
           type="text"
@@ -156,8 +156,12 @@ export default function JoinPage() {
 
         {error && <div className="notice err">{error}</div>}
 
-        <p style={{ marginTop: 20 }}>
-          <button type="submit" disabled={status === "saving"}>
+        <p style={{ marginTop: 24 }}>
+          <button
+            type="submit"
+            className="cta-primary"
+            disabled={status === "saving"}
+          >
             {status === "saving" ? "Submitting…" : "Submit"}
           </button>
         </p>

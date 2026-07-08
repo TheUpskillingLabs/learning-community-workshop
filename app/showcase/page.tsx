@@ -43,10 +43,10 @@ export default function ShowcaseScreen() {
 
   if (!show) {
     return (
-      <main className="screen center">
-        <div className="eyebrow">Live from our session tool</div>
-        <h1>Showcase</h1>
-        <p className="lead">Waiting for the next table to present…</p>
+      <main className="screen">
+        <div className="eyebrow">Showcase</div>
+        <h1>Waiting for the next table</h1>
+        <p className="lead">The facilitator will bring a worksheet up here.</p>
       </main>
     );
   }

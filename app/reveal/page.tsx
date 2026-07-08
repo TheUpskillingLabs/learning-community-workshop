@@ -44,7 +44,7 @@ export default function RevealScreen() {
 
   return (
     <main className="screen">
-      <div className="eyebrow">Live from our session tool</div>
+      <div className="eyebrow">Table assignments</div>
       <h1>Find your table</h1>
       <p className="lead">
         You were grouped by who you serve and the skill your learners struggle
@@ -52,15 +52,13 @@ export default function RevealScreen() {
       </p>
 
       {data.tables.length === 0 ? (
-        <div className="notice" style={{ fontSize: "1.4rem" }}>
-          Waiting for table assignments…
-        </div>
+        <div className="notice">Waiting for table assignments…</div>
       ) : (
         <div className="reveal-grid">
           {data.tables.map((t) => (
             <div key={t.code} className="table-card">
               <div className="code">{t.code}</div>
-              <div className="muted">{t.label}</div>
+              <div className="label">{t.label}</div>
               <div className="members">
                 {t.members.map((m, i) => (
                   <div key={i}>{m.handle}</div>
