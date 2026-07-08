@@ -1,121 +1,175 @@
-# Workshop App — Architecture Recommendation
+# Workshop App — Architecture
 
-Companion app for **"Building an Open Learning Community"** (Digital Navigator Summit), an 80-minute live session for ~50-150 attendees. This doc lays out the recommended stack and design; no code has been written yet.
+Companion app for **"Building an Open Learning Community"** (Digital Navigators
+Summit), an 80-minute live session for ~50–150 anonymous attendees. This
+documents the design as built. Setup/run instructions are in the
+[README](../README.md).
+
+The design was validated against current Supabase / Next.js / Vercel / Claude
+docs and an adversarial security review; the notes below fold in the
+corrections that changed the original plan.
 
 ## Decision summary
 
 | Layer | Choice |
 | --- | --- |
 | Frontend + backend | Next.js (App Router), deployed on Vercel |
-| Database + realtime | A **new, dedicated Supabase project** (not the existing OLOS project) |
-| AI clustering | Server-side call to the Claude API, one-shot per session |
-| Participant auth | None — anonymous join via QR/short link |
-| Facilitator auth | Simple shared password gate on `/admin` |
+| Database + realtime | A **new, dedicated Supabase project** (Postgres + Realtime **Broadcast**) |
+| AI clustering | One server-side Claude call (`messages.parse` + structured output), validated & repaired in code |
+| Participant auth | None — anonymous join via QR/link; `participant_id` in localStorage |
+| Facilitator auth | Shared password checked server-side; signed httpOnly cookie |
 
-Everything else in this doc justifies and details these five rows.
+## Why a new Supabase project (not the shared OLOS one)
 
-## Why Next.js + Vercel
+Intake is anonymous, publicly-submitted, single-day, disposable data. Isolating
+it in its own project bounds the blast radius and keeps RLS mistakes away from
+production data. A fresh project is minutes of work on the same org.
 
-The team already deploys on Vercel, so there's no new deploy pipeline to stand up. Next.js API routes (or Route Handlers) let the intake-write and clustering-trigger logic run server-side, which matters for two reasons: the Supabase service-role key and the `ANTHROPIC_API_KEY` must never reach the browser, and the AI clustering call needs to read every intake row for a session in one place before writing results back.
+## Security model (the load-bearing part)
 
-## Why a new Supabase project, not the shared OLOS one
+**RLS cannot scope anonymous clients by session.** Every anonymous visitor
+presents the *same* publishable key and the same `anon` role; there is no
+per-client claim, and `auth.uid()` is `NULL`. So RLS can't enforce
+"only my session." The design accounts for this rather than pretending it holds:
 
-- **Blast radius.** Intake is a publicly-writable, anonymous, no-login form — anyone with the QR link can insert rows. Putting that in the same project as OLOS's real data means one more surface to get RLS wrong on, for zero benefit.
-- **Lifecycle mismatch.** This data is single-day and disposable (facilitator notes may want to keep the six-box outputs afterward, but the intake churn and session bookkeeping don't need to live in a production project long-term).
-- **Cost/effort.** A new Supabase project on the same org takes minutes and is free at this scale (well under the free tier's row/row-read limits for ~150 attendees).
+- **RLS is enabled on all four tables with _no anon policies_** → deny-by-default.
+  The publishable key cannot read or write any table.
+- **All reads and writes go through server Route Handlers** using the **secret
+  key** (bypasses RLS). Those handlers sanitize, length-clamp, and rate-limit.
+- The **session UUID in the join link is an unguessable bearer capability**, not
+  a security boundary — anyone with the link can participate in that session.
+  Acceptable for a one-day disposable event; documented, not overstated.
+- **Raw intake free-text is never exposed to the browser.** The reveal screen
+  receives only curated data (display handle → table number). This closes the
+  leak where the public anon key could otherwise stream every attendee's answers.
+- `is_showcased` / `showcase_order` are **server-only fields** set only from the
+  admin routes, so no attendee can push themselves onto the projector.
 
-If reusing OLOS becomes a hard requirement later (e.g. wanting workshop data to feed into OLOS's existing reporting), migrate by dumping the `tables` (see below) into OLOS post-event rather than building live against it.
+## Realtime: server-sent Broadcast (not `postgres_changes`)
+
+The big screens update via **Realtime Broadcast** on per-session topics
+(`reveal:<id>`, `showcase:<id>`). After a state change, the server sends one
+curated, non-PII payload on the topic; the big screens subscribe with the
+publishable key and re-render. Chosen over `postgres_changes` because:
+
+- `postgres_changes` honors RLS, and the SELECT policy needed to make it work
+  would let any internet client stream raw intake text — a data leak.
+- It avoids the per-subscriber fan-out burst when clustering writes ~150 rows.
+
+Attendee phones do **not** subscribe to Realtime at all (only the projector
+screens do), which also keeps the free-tier connection cap a non-issue. The
+admin live count is a short server poll, not an anon subscription.
 
 ## Data model
 
 ```
-sessions
-  id (uuid, pk)
-  name                text        -- e.g. "Digital Navigator Summit 2026-07-08"
-  created_at          timestamptz
+sessions(id, name, created_at)
 
-intake_responses
-  id                  uuid pk
-  session_id          uuid fk -> sessions
-  participant_id      text        -- client-generated, stored in localStorage
-  persona_text        text        -- "who they serve"
-  skill_gap_text      text        -- "a skill their learners struggle with"
-  goal_text           text        -- "what they want from today"
-  table_id            uuid fk -> tables, nullable
-  created_at          timestamptz
+tables(id, session_id→sessions, label, code, ai_rationale, created_at)
 
-tables
-  id                  uuid pk
-  session_id          uuid fk -> sessions
-  label               text        -- "Table 1"
-  ai_rationale        text        -- why the model grouped these people (shown to facilitator, optional on-screen)
-  created_at          timestamptz
+intake_responses(id, session_id→sessions, participant_id, handle,
+                 persona_text, skill_gap_text, goal_text,
+                 table_id→tables (nullable), created_at,
+                 UNIQUE(session_id, participant_id))
 
-six_box_submissions
-  id                  uuid pk
-  table_id            uuid fk -> tables (1:1 in practice, one worksheet per table)
-  persona              text
-  pain_point           text
-  intervention         text
-  safe_space           text
-  proof_point          text
-  ongoing_support      text
-  is_showcased         boolean default false
-  showcase_order       int nullable
-  updated_at           timestamptz
+six_box_submissions(id, session_id→sessions,          -- denormalized for filtering
+                    table_id→tables, UNIQUE(table_id), -- one worksheet per table (upsert)
+                    persona, pain_point, intervention, safe_space,
+                    proof_point, ongoing_support,
+                    is_showcased, showcase_order,       -- server-only fields
+                    updated_at)
 ```
 
-RLS: `intake_responses` and `six_box_submissions` allow anonymous `insert`/`update` scoped to `session_id` (no cross-session reads/writes); all `select` for the public read-only screens (`/reveal`, `/showcase`) is scoped to the active `session_id` too. `/admin` writes (triggering clustering, editing `table_id`, picking showcase order) go through the server using the service-role key, gated by the password check in the route handler — not exposed as an open RLS policy.
+Notes from review, baked in:
+- `six_box_submissions.session_id` is **denormalized** so server queries filter
+  by session without a join.
+- `UNIQUE(table_id)` makes the worksheet an upsert target (concurrent submitters
+  at one table don't create duplicate rows).
+- `handle` was **added** — intake otherwise had no name, so an attendee couldn't
+  recognize themselves on the reveal screen (raw persona text must not be shown).
+- `participant_id` is client-generated and forgeable; it only de-dupes honest
+  refreshes, it is not identity.
 
-## Screens / routes
+Migration: [`supabase/migrations/0001_init.sql`](../supabase/migrations/0001_init.sql).
 
-- **`/join`** — the intake form (3 free-text fields). Mobile-first; reached via QR code shown on the opening slide. Generates and stores a `participant_id` in localStorage on first load so a refresh doesn't create a duplicate submission.
-- **`/reveal`** — big-screen display of table assignments once clustering has run. Subscribes to Supabase Realtime on `tables`/`intake_responses` so it updates the instant the facilitator triggers clustering — no refresh needed.
-- **`/table/[tableId]`** — the six-box worksheet entry form, one per table (facilitator can print/share the link, or QR-code it per-table). Submits into `six_box_submissions`.
-- **`/showcase`** — big-screen slide viewer. Renders whichever `six_box_submissions` row the facilitator has marked "showcased," styled to match the deck's six-box slide layout. Realtime-subscribed so advancing to the next table on `/admin` flips the screen live.
-- **`/admin`** — facilitator control room, password-gated:
-  - live count of intake submissions as they arrive
-  - "Cluster now" button → triggers the AI clustering route
-  - editable list of `table_id` assignments (manual nudge if the AI grouping needs a fix)
-  - pick which 3 tables show and in what order on `/showcase`
+## Routes
 
-## Clustering flow (AI-assisted, free text)
+**Pages** (`app/`): `/` (landing) · `/join` (intake) · `/table` (picker) →
+`/table/[tableId]` (six-box worksheet) · `/reveal` (projector, Broadcast
+subscriber) · `/showcase` (projector, Broadcast subscriber) · `/admin`
+(facilitator panel).
 
-1. Facilitator hits **"Cluster now"** on `/admin` (intended to happen a few minutes into the 15-minute presentation window, per the run-of-show).
-2. A Route Handler reads all `intake_responses` for the session (at 150 rows, this comfortably fits in one prompt — no embeddings/vector DB needed at this scale).
-3. It sends one Claude API call with a structured-output schema requesting: groups of 3-4 `participant_id`s, a short label per table, and a one-line rationale — clustered by shared persona/skill-gap similarity in the free text.
-4. The route writes the result: creates `tables` rows, sets `intake_responses.table_id` for each participant.
-5. Supabase Realtime pushes the change to `/reveal` automatically.
+**API** (`app/api/`), all `runtime = "nodejs"`:
+- `join` — sanitize + clamp + rate-limit → upsert intake.
+- `table/[tableId]` — GET current six boxes; POST sanitize → upsert (six content
+  columns only; never the showcase fields).
+- `public/{session,tables,reveal,showcase}` — curated, non-PII GETs for page
+  hydration.
+- `admin/{login,logout,me,session,state,cluster,reassign,showcase}` — each
+  admin mutation re-verifies the signed cookie server-side before using the
+  secret key.
 
-This keeps the "we want AI to help process free text" requirement without forcing attendees into picklists, and avoids building/tuning a bespoke clustering algorithm for a one-day event.
+## Clustering flow
 
-## Realtime wiring
+1. Facilitator clicks **Cluster now** (`POST /api/admin/cluster`).
+2. The handler loads all intake rows for the session and makes **one**
+   `client.messages.parse()` call:
+   - model `claude-opus-4-8` (dateless id; `claude-sonnet-5` is a cheaper
+     alternative via `CLUSTER_MODEL`),
+   - `thinking: { type: "adaptive" }` (off by default on Opus 4.8; clustering is
+     a reasoning task),
+   - `output_config.format` via `zodOutputFormat` for guaranteed-shape JSON,
+   - **no** `temperature` / `top_p` / `budget_tokens` (all 400 on Opus 4.8 /
+     Sonnet 5).
+3. **JSON Schema cannot enforce table size 3–4 or exactly-once coverage**, so
+   `lib/cluster.ts` validates the result (set-equality of ids, size in [3,4])
+   and, on failure, does one repair-retry then a **deterministic repair**
+   (split oversize, place orphans into the smallest table, dissolve undersize).
+   An invalid clustering is never surfaced.
+4. Old tables are dropped, fresh tables + assignments are written with the
+   secret key, and a curated payload is broadcast to `reveal:<id>`.
+5. Model output is treated as untrusted (prompt-injection defense): every id is
+   verified against the session, and labels/rationale are length-clamped.
 
-Three Supabase Realtime channels, each scoped to `session_id`:
-- `intake_responses` → drives the live submission counter on `/admin`
-- `tables` (+ join on `intake_responses.table_id`) → drives `/reveal`
-- `six_box_submissions` → drives `/showcase`
+The facilitator's hand-edit (`/api/admin/reassign`) is the safety valve for the
+non-deterministic grouping; late arrivals land in "unassigned" for manual
+placement. Cost is ~$0.22/call on Opus 4.8 (~$0.09 on Sonnet 5).
 
-## Deployment notes
+## Runtime / deployment notes
 
-- New Supabase project, env vars in Vercel: `SUPABASE_URL`, `SUPABASE_ANON_KEY` (client-safe), `SUPABASE_SERVICE_ROLE_KEY` (server-only), `ANTHROPIC_API_KEY` (server-only), `ADMIN_PASSWORD`.
-- One `sessions` row per live event; `/join`'s QR code encodes `/join?session=<id>` (or a single active session is looked up by default if only one event runs at a time).
-- Generate the QR code at build/runtime pointing at the deployed `/join` URL — any lightweight QR library works, no external service needed.
+- The cluster route sets `maxDuration = 60`. Vercel **Hobby caps at 60s**; on
+  ~150 people Opus + adaptive thinking can approach that — prefer **Pro** (up to
+  300s) for the live event, or `CLUSTER_MODEL=claude-sonnet-5`.
+- A new free-tier Supabase project **auto-pauses after ~7 days idle** — warm it
+  before the event.
+- Env vars, key rotation, and Advisors check: see the README.
 
-## Explicit non-goals (cut for time, v1)
+## Input safety / abuse
 
-- No participant accounts or cross-session history.
-- No drag-and-drop manual re-clustering UI — the facilitator edits a row's `table_id` directly in the `/admin` list if the AI grouping needs a nudge.
-- No persistence/reporting layer beyond what's in Supabase; if the six-box outputs need to feed OLOS later, export/copy after the event rather than building a live integration now.
+- Server-side per-field length clamp (~300 chars) + control/zero-width/RTL
+  stripping (`lib/sanitize.ts`), applied before any persist.
+- Per-session row cap and a coarse in-memory per-IP rate limiter
+  (`lib/ratelimit.ts`) as a per-instance backstop — a Vercel WAF /
+  `@vercel/firewall` rule is the production upgrade (tune generously; a room
+  shares NAT IPs).
+- All user/model text renders as **plain text** (no `dangerouslySetInnerHTML`,
+  no markdown). Keep a facilitator moderation beat before free text hits the
+  projector.
 
-## Touchpoint coverage check (against the facilitation guide)
+## Explicit non-goals (accepted risk, one-day event)
+
+- No participant accounts; clearing localStorage/cookies mints a new identity,
+  so sock-puppet/duplicate submissions are best-effort-only.
+- No cross-session history or reporting layer.
+- Per-session isolation is only as strong as the secrecy of the join link.
+
+## Touchpoint coverage (against the facilitation guide)
 
 | Guide reference | Covered by |
 | --- | --- |
-| "APP: three-field intake" (0:03-0:09) | `/join` |
-| "Sandra forms tables... in parallel" (clustering) | AI clustering route, triggered from `/admin` |
-| "Assignments go up" (reveal) | `/reveal` |
-| "LIVE FROM OUR SESSION TOOL" — table assignments (slide 11) | `/reveal` |
-| "Sharpen... load them into the app so they render as a slide" | `/table/[tableId]` → `six_box_submissions` |
+| "APP: three-field intake" (0:03) | `/join` |
+| "Sandra forms tables… in parallel" | AI clustering from `/admin` |
+| "Assignments go up" / "LIVE FROM OUR SESSION TOOL" (slide 11) | `/reveal` |
+| "load them into the app so they render as a slide" | `/table/[tableId]` |
 | "LIVE FROM OUR SESSION TOOL" — six-box slide (slide 17) | `/showcase` |
 | "Pick three groups" (showcase selection) | `/admin` showcase picker |
