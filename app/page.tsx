@@ -6,26 +6,23 @@ export default function Home() {
       <div className="eyebrow eyebrow-teal">Digital Navigator Summit</div>
       <h1>Building an open learning community</h1>
       <p className="lead">
-        The Upskilling Labs is a citizen R&amp;D community where people build real
-        skills by doing real work with real people. Today we&apos;re hosting the
-        Digital Navigator Summit in Washington DC.
+        The Upskilling Labs is an open learning community where people build
+        real skills in emerging technologies by doing real work with real
+        people. Today we&apos;re hosting the Digital Navigator Summit in
+        Washington DC.
       </p>
 
       <div className="card">
-        <h2>Find your people. Build your edge.</h2>
         <p className="muted">
           The Labs isn&apos;t a class you sit through. It&apos;s where you
           practise becoming the person you want to be — on real problems, with
           people who notice.
         </p>
-        <a
-          className="btn btn-red cta-primary"
-          href="https://theupskillinglabs.org"
-        >
-          Join The Labs
-        </a>
+        <Link href="/join" className="btn btn-red cta-primary">
+          Start Your Intake
+        </Link>
         <p className="help" style={{ marginTop: 16 }}>
-          Here for the summit? <Link href="/join">Start your intake →</Link>
+          <a href="https://theupskillinglabs.org">Join The Labs →</a>
         </p>
       </div>
     </main>
