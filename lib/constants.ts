@@ -20,6 +20,6 @@ export const SIX_BOX_KEYS = SIX_BOXES.map((b) => b.key) as SixBoxKey[];
 // The three intake fields shown on /join.
 export const INTAKE_FIELDS = [
   { key: "persona_text", label: "Who do you serve?", placeholder: "e.g. adult ESL learners at a public library" },
-  { key: "skill_gap_text", label: "A skill your learners struggle with", placeholder: "e.g. using AI tools to draft cover letters" },
+  { key: "skill_gap_text", label: "A challenge your learners struggle with", placeholder: "e.g. using AI tools to draft cover letters" },
   { key: "goal_text", label: "What do you want from today?", placeholder: "e.g. one idea I can try Monday" },
 ] as const;
