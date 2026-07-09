@@ -5,6 +5,7 @@ import Link from "next/link";
 import { SIX_BOXES } from "@/lib/constants";
 import type { PresentationsPayload, KeepGoing as KeepGoingData } from "@/lib/types";
 import { KeepGoing } from "@/app/components/KeepGoing";
+import { resolveClientSession, withSession } from "@/lib/participant";
 
 type Data = PresentationsPayload & { keep: KeepGoingData };
 
@@ -15,10 +16,10 @@ export default function PresentPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const explicit = new URLSearchParams(window.location.search).get("session");
+    const session = resolveClientSession();
     const url =
       "/api/public/presentations" +
-      (explicit ? `?session=${encodeURIComponent(explicit)}` : "");
+      (session ? `?session=${encodeURIComponent(session)}` : "");
     fetch(url)
       .then((r) => r.json())
       .then((d) => setData(d as Data))
@@ -44,7 +45,7 @@ export default function PresentPage() {
         Browse each table&apos;s six-box. Yours is in here too.
       </p>
       <p className="help" style={{ marginTop: -4 }}>
-        <Link href="/me">← Back to your table</Link>
+        <Link href={withSession("/me")}>← Back to your table</Link>
       </p>
 
       {tables.length === 0 ? (

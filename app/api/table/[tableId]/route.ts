@@ -33,7 +33,12 @@ export async function GET(_req: Request, ctx: Ctx) {
   const boxes: Record<string, string> = {};
   for (const k of SIX_BOX_KEYS) boxes[k] = sub[k] ?? "";
 
-  return NextResponse.json({ code: tbl.code, label: tbl.label, boxes });
+  return NextResponse.json({
+    code: tbl.code,
+    label: tbl.label,
+    boxes,
+    session_id: tbl.session_id,
+  });
 }
 
 // POST upserts the six boxes for this table. Anon can only touch the six

@@ -4,20 +4,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { INTAKE_FIELDS, MAX_FIELD_LEN } from "@/lib/constants";
-
-const PID_KEY = "olc_participant_id";
-
-function getParticipantId(): string {
-  let id = localStorage.getItem(PID_KEY);
-  if (!id) {
-    id =
-      typeof crypto !== "undefined" && "randomUUID" in crypto
-        ? crypto.randomUUID()
-        : `p_${Date.now()}_${Math.random().toString(36).slice(2)}`;
-    localStorage.setItem(PID_KEY, id);
-  }
-  return id;
-}
+import { getParticipantId, saveSession } from "@/lib/participant";
 
 export default function JoinPage() {
   const router = useRouter();
@@ -39,6 +26,7 @@ export default function JoinPage() {
       .then((d) => {
         setSessionId(d.id ?? null);
         setSessionName(d.name ?? "");
+        saveSession(d.id ?? null);
       })
       .catch(() => setSessionId(null))
       .finally(() => setLoading(false));
@@ -67,7 +55,8 @@ export default function JoinPage() {
         return;
       }
       setStatus("done");
-      // Land on the participant's live "my table" hub.
+      // Anchor this device to the session they joined, then land on the hub.
+      saveSession(sessionId);
       router.push(`/me?session=${encodeURIComponent(sessionId)}`);
     } catch {
       setError("Network error. Please try again.");
