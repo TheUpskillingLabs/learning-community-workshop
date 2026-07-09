@@ -200,6 +200,23 @@ a:hover {
   color: var(--od3);
 }
 
+/* Links on the ink footer use --teal (the on-dark accent); the global
+   --teal-deep link color is too dark against ink. */
+.footer a {
+  color: var(--teal);
+  text-decoration: none;
+}
+
+.footer a:hover {
+  text-decoration: underline;
+}
+
+.footer-site {
+  font-size: 14px;
+  line-height: 20px;
+  margin: -8px 0 0;
+}
+
 /* ── Page column ─────────────────────────────────────────────────────── */
 .wrap {
   flex: 1 0 auto;
