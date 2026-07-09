@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import type { MePayload } from "@/lib/types";
 import { KeepGoing } from "@/app/components/KeepGoing";
+import { resolveClientSession, withSession } from "@/lib/participant";
 
 const PID_KEY = "olc_participant_id";
 
@@ -24,10 +25,10 @@ export default function MePage() {
       setLoading(false);
       return;
     }
-    const explicit = new URLSearchParams(window.location.search).get("session");
+    const session = resolveClientSession();
     const url =
       `/api/public/me?participant_id=${encodeURIComponent(pid)}` +
-      (explicit ? `&session=${encodeURIComponent(explicit)}` : "");
+      (session ? `&session=${encodeURIComponent(session)}` : "");
 
     let active = true;
     const load = () =>
@@ -137,10 +138,10 @@ export default function MePage() {
           </div>
 
           <div className="row" style={{ marginTop: 20 }}>
-            <Link className="btn" href={`/table/${me.table.id}`}>
+            <Link className="btn" href={withSession(`/table/${me.table.id}`)}>
               Open your table&apos;s worksheet
             </Link>
-            <Link className="btn secondary" href="/present">
+            <Link className="btn secondary" href={withSession("/present")}>
               See all presentations
             </Link>
           </div>

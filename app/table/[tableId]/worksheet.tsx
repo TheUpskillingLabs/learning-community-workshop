@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useState, type FormEvent } from "react";
+import Link from "next/link";
 import { SIX_BOXES, MAX_FIELD_LEN } from "@/lib/constants";
+import { saveSession } from "@/lib/participant";
 
 type Boxes = Record<string, string>;
 
@@ -9,6 +11,7 @@ export default function Worksheet({ tableId }: { tableId: string }) {
   const [label, setLabel] = useState("");
   const [code, setCode] = useState("");
   const [boxes, setBoxes] = useState<Boxes>({});
+  const [sessionId, setSessionId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [status, setStatus] = useState<"idle" | "saving" | "saved">("idle");
@@ -21,6 +24,9 @@ export default function Worksheet({ tableId }: { tableId: string }) {
         setLabel(d.label ?? "");
         setCode(d.code ?? "");
         setBoxes(d.boxes ?? {});
+        setSessionId(d.session_id ?? null);
+        // Anchor this device to the worksheet's session for onward nav.
+        saveSession(d.session_id);
       })
       .catch(() => setNotFound(true))
       .finally(() => setLoading(false));
@@ -115,6 +121,25 @@ export default function Worksheet({ tableId }: { tableId: string }) {
           showcase, whatever is saved here appears on the big screen.
         </p>
       </form>
+
+      {/* Journey navigation: back to the table hub, forward to presentations. */}
+      <div
+        className="row"
+        style={{ justifyContent: "space-between", marginTop: 24 }}
+      >
+        <Link
+          className="btn secondary"
+          href={sessionId ? `/me?session=${sessionId}` : "/me"}
+        >
+          ← Your table
+        </Link>
+        <Link
+          className="btn secondary"
+          href={sessionId ? `/present?session=${sessionId}` : "/present"}
+        >
+          See all presentations →
+        </Link>
+      </div>
     </main>
   );
 }
