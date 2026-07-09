@@ -1,22 +1,27 @@
 /* eslint-disable @next/next/no-img-element */
 
+const SITE = "https://theupskillinglabs.org";
+
 const PARTNERS = [
-  { src: "/brand/partner-dcpl.png", alt: "DC Public Library" },
   { src: "/brand/partner-levy.png", alt: "Levy Strategic Design" },
   { src: "/brand/partner-superbloom.png", alt: "Superbloom Design" },
 ];
 
-// Ink footer: lockup, brand line, partner rail (white knockouts), legal line.
+// Ink footer: lockup (links to the site), brand line, site link, partner rail
+// (white knockouts), legal line.
 export function SiteFooter() {
   return (
     <footer className="footer">
       <div className="footer-inner">
-        <div className="footer-logo">
+        <a className="footer-logo" href={SITE} aria-label="The Upskilling Labs">
           <img src="/brand/logo-lockup-light.png" alt="The Upskilling Labs" />
-        </div>
+        </a>
         <p className="footer-brandline">
           A commons for upskilling — learn by doing, in the open. Projects,
           playbooks, and lessons, built like open source.
+        </p>
+        <p className="footer-site">
+          <a href={SITE}>theupskillinglabs.org →</a>
         </p>
         <div className="footer-partners">
           {PARTNERS.map((p) => (
