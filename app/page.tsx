@@ -3,36 +3,29 @@ import Link from "next/link";
 export default function Home() {
   return (
     <main className="wrap">
-      <div className="eyebrow eyebrow-teal">Workshop companion</div>
+      <div className="eyebrow eyebrow-teal">Digital Navigator Summit</div>
       <h1>Building an open learning community</h1>
       <p className="lead">
-        You&apos;re in the room to design a learning cycle with people who serve
-        learners like yours. Join here, then watch the screen for your table.
+        The Upskilling Labs is a citizen R&amp;D community where people build real
+        skills by doing real work with real people. Today we&apos;re hosting the
+        Digital Navigator Summit in Washington DC.
       </p>
 
       <div className="card">
-        <h2>Joining us today?</h2>
+        <h2>Find your people. Build your edge.</h2>
         <p className="muted">
-          Scan the QR code on the screen, or tap below to answer three quick
-          questions.
+          The Labs isn&apos;t a class you sit through. It&apos;s where you
+          practise becoming the person you want to be — on real problems, with
+          people who notice.
         </p>
-        <Link className="btn cta-primary" href="/join">
-          Join the workshop
-        </Link>
-      </div>
-
-      {/* Facilitator controls — intentionally quiet, below the fold of intent. */}
-      <div className="host-links">
-        <span className="eyebrow">Running the room</span>
-        <div className="host-row">
-          <Link href="/admin">Admin panel</Link>
-          <Link href="/reveal">Reveal screen</Link>
-          <Link href="/showcase">Showcase screen</Link>
-          <Link href="/table">Table worksheets</Link>
-        </div>
-        <p className="help">
-          Open Reveal and Showcase on the projector; drive everything else from
-          Admin.
+        <a
+          className="btn btn-red cta-primary"
+          href="https://theupskillinglabs.org"
+        >
+          Join The Labs
+        </a>
+        <p className="help" style={{ marginTop: 16 }}>
+          Here for the summit? <Link href="/join">Start your intake →</Link>
         </p>
       </div>
     </main>
