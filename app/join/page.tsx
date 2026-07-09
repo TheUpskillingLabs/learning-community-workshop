@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState, type FormEvent } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { INTAKE_FIELDS, MAX_FIELD_LEN } from "@/lib/constants";
 
 const PID_KEY = "olc_participant_id";
@@ -18,6 +20,7 @@ function getParticipantId(): string {
 }
 
 export default function JoinPage() {
+  const router = useRouter();
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [sessionName, setSessionName] = useState<string>("");
   const [loading, setLoading] = useState(true);
@@ -64,6 +67,8 @@ export default function JoinPage() {
         return;
       }
       setStatus("done");
+      // Land on the participant's live "my table" hub.
+      router.push(`/me?session=${encodeURIComponent(sessionId)}`);
     } catch {
       setError("Network error. Please try again.");
       setStatus("idle");
@@ -98,17 +103,12 @@ export default function JoinPage() {
         <div className="eyebrow eyebrow-teal">You&apos;re in</div>
         <h1>Thanks, {handle || "friend"}.</h1>
         <p className="lead">
-          Your answers are saved. In a moment you&apos;ll be grouped with a few
-          people who serve similar learners — watch the screen for your table.
+          Your answers are saved. Taking you to your table…
         </p>
-        <div className="notice ok">
-          You can close this page. To change an answer, just submit the form
-          again from this device.
-        </div>
-        <p style={{ marginTop: 20 }}>
-          <button className="secondary" onClick={() => setStatus("idle")}>
-            Edit my answers
-          </button>
+        <p style={{ marginTop: 12 }}>
+          <Link className="btn" href={`/me?session=${sessionId ?? ""}`}>
+            Go to your table
+          </Link>
         </p>
       </main>
     );

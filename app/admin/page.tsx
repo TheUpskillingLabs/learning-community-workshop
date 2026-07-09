@@ -22,7 +22,14 @@ type AdminState = {
   tables: AdminTable[];
   unassigned: Person[];
 };
-type Session = { id: string; name: string; joinUrl: string; qr: string };
+type Session = {
+  id: string;
+  name: string;
+  joinUrl: string;
+  qr: string;
+  slack_url: string | null;
+  community_keeper: string | null;
+};
 
 export default function AdminPage() {
   const [authed, setAuthed] = useState<boolean | null>(null);
@@ -32,6 +39,14 @@ export default function AdminPage() {
   const [state, setState] = useState<AdminState | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
+  const [slackDraft, setSlackDraft] = useState("");
+  const [keeperDraft, setKeeperDraft] = useState("");
+
+  // Seed the keep-going link drafts whenever the session loads/changes.
+  useEffect(() => {
+    setSlackDraft(session?.slack_url ?? "");
+    setKeeperDraft(session?.community_keeper ?? "");
+  }, [session]);
 
   const loadSession = useCallback(async () => {
     const r = await fetch("/api/admin/session");
@@ -116,6 +131,27 @@ export default function AdminPage() {
       loadState(s.id);
     } else {
       setMsg("Could not create session.");
+    }
+    setBusy(null);
+  }
+
+  async function saveLinks() {
+    if (!session) return;
+    setBusy("links");
+    setMsg(null);
+    const r = await fetch("/api/admin/session", {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ slack_url: slackDraft, community_keeper: keeperDraft }),
+    });
+    const d = await r.json().catch(() => ({}));
+    if (r.ok) {
+      setSession((s) =>
+        s ? { ...s, slack_url: d.slack_url ?? null, community_keeper: d.community_keeper ?? null } : s
+      );
+      setMsg("Saved the keep-going links.");
+    } else {
+      setMsg(d.error ?? "Could not save links.");
     }
     setBusy(null);
   }
@@ -257,6 +293,36 @@ export default function AdminPage() {
 
       {session && (
         <>
+          {/* --- Keep-going links (participant handoff) --- */}
+          <div className="card">
+            <h2>Keep-going links</h2>
+            <p className="muted">
+              Shown to participants at the end, on their phones. (Requires the
+              0002 migration on the workshop database.)
+            </p>
+            <label htmlFor="slack">Slack invite link</label>
+            <input
+              id="slack"
+              type="text"
+              value={slackDraft}
+              onChange={(e) => setSlackDraft(e.target.value)}
+              placeholder="https://join.slack.com/t/…"
+            />
+            <label htmlFor="keeper">Community keeper (name)</label>
+            <input
+              id="keeper"
+              type="text"
+              value={keeperDraft}
+              onChange={(e) => setKeeperDraft(e.target.value)}
+              placeholder="e.g. Sam"
+            />
+            <div className="row" style={{ marginTop: 16 }}>
+              <button onClick={saveLinks} disabled={busy === "links"}>
+                {busy === "links" ? "Saving…" : "Save links"}
+              </button>
+            </div>
+          </div>
+
           {/* --- Intake + clustering --- */}
           <div className="card">
             <div className="row" style={{ justifyContent: "space-between" }}>

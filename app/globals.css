@@ -578,6 +578,42 @@ button.secondary:hover,
   gap: 16px;
 }
 
+/* Participant all-presentations page: each table's six boxes in a light grid */
+.present-boxes {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-top: 12px;
+}
+
+@media (max-width: 640px) {
+  .present-boxes {
+    grid-template-columns: 1fr;
+  }
+}
+
+.present-box {
+  border: 1px solid var(--rule);
+  border-radius: var(--r);
+  padding: 12px 14px;
+  background: var(--paper);
+}
+
+.present-box-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 4px;
+}
+
+.present-box-body {
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--charcoal);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
 /* Hero primary action — the participant's path, given full weight */
 .cta-primary {
   width: 100%;
