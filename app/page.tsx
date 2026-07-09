@@ -14,9 +14,10 @@ export default function Home() {
 
       <div className="card">
         <p className="muted">
-          The Labs isn&apos;t a class you sit through. It&apos;s where you
-          practise becoming the person you want to be — on real problems, with
-          people who notice.
+          Today is a working session. You&apos;ll join a small group, take a
+          real challenge from your own programs, and sketch a way to meet it
+          together. Your intake is how we group you, so start with who you
+          serve and what your learners are working on.
         </p>
         <Link href="/join" className="btn btn-red cta-primary">
           Start Your Intake
