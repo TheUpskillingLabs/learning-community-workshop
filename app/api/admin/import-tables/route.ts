@@ -2,17 +2,15 @@ import { NextResponse } from "next/server";
 import { isAdmin } from "@/lib/admin";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { clean } from "@/lib/sanitize";
-import { clusterAttendees, type IntakeRow } from "@/lib/cluster";
+import { parseGroupsCsv, validate, repair } from "@/lib/cluster";
 import { applyClustering } from "@/lib/applyClustering";
 
-// The one long-running route: it makes the Claude call. Node runtime is
-// required (SDK + secret key). maxDuration is capped by your Vercel plan —
-// 60s on Hobby, up to 300s on Pro. Opus + adaptive thinking on ~150 rows can
-// approach 60s, so prefer Pro for the live event, or set CLUSTER_MODEL to
-// claude-sonnet-5.
 export const runtime = "nodejs";
-export const maxDuration = 60;
 
+// Manual counterpart to /api/admin/cluster: the facilitator pastes back the
+// CSV an AI chat produced from the /api/admin/prompt roster, instead of this
+// app calling Anthropic directly. Same validate()/repair() safety net, so a
+// malformed or rule-breaking reply still lands on valid 3-4 person tables.
 export async function POST(req: Request) {
   if (!(await isAdmin())) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
@@ -25,25 +23,37 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Invalid request" }, { status: 400 });
   }
   const sessionId = clean(body.session_id, 64);
+  const csv = typeof body.csv === "string" ? body.csv : "";
   if (!sessionId) return NextResponse.json({ error: "missing session" }, { status: 400 });
+  if (!csv.trim()) return NextResponse.json({ error: "Paste the CSV reply first." }, { status: 400 });
 
   const admin = supabaseAdmin();
-
   const { data: rowsData } = await admin
     .from("intake_responses")
-    .select("participant_id, handle, persona_text, skill_gap_text, goal_text")
+    .select("participant_id")
     .eq("session_id", sessionId);
-  const rows = (rowsData ?? []) as IntakeRow[];
-  if (rows.length === 0) {
+  const allIds = ((rowsData ?? []) as { participant_id: string }[]).map((r) => r.participant_id);
+  if (allIds.length === 0) {
     return NextResponse.json({ error: "No intake responses yet." }, { status: 400 });
   }
 
-  // Model call + validate + repair (never returns an invalid clustering).
-  let groups;
+  let modelTables;
   try {
-    groups = await clusterAttendees(rows);
-  } catch {
-    return NextResponse.json({ error: "Clustering failed. Try again." }, { status: 502 });
+    modelTables = parseGroupsCsv(csv);
+  } catch (e) {
+    return NextResponse.json(
+      { error: e instanceof Error ? e.message : "Could not parse that CSV." },
+      { status: 400 }
+    );
+  }
+
+  let groups = modelTables.map((t) => ({
+    label: t.label,
+    rationale: t.rationale,
+    ids: t.participant_ids.filter((id) => allIds.includes(id)),
+  }));
+  if (validate(groups, allIds).length > 0) {
+    groups = repair(modelTables, allIds);
   }
 
   try {

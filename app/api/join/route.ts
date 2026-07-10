@@ -7,6 +7,36 @@ export const runtime = "nodejs";
 
 const MAX_ROWS_PER_SESSION = 400; // generous cap for a ~150-person room
 
+// Return this device's previously-submitted answers so /join can prefill the
+// form instead of showing a blank one. The participant_id is the same
+// client-held bearer token the rest of the participant journey relies on.
+export async function GET(req: Request) {
+  const rl = rateLimit(`join-get:${clientIp(req)}`, 60, 60_000);
+  if (!rl.ok) {
+    return NextResponse.json(
+      { error: "Too many requests, please wait a moment." },
+      { status: 429, headers: { "retry-after": String(rl.retryAfterSec) } }
+    );
+  }
+
+  const url = new URL(req.url);
+  const sessionId = clean(url.searchParams.get("session"), 64);
+  const participantId = clean(url.searchParams.get("participant"), 64);
+  if (!sessionId || !participantId) {
+    return NextResponse.json({ found: false });
+  }
+
+  const { data } = await supabaseAdmin()
+    .from("intake_responses")
+    .select("handle, persona_text, skill_gap_text, goal_text")
+    .eq("session_id", sessionId)
+    .eq("participant_id", participantId)
+    .maybeSingle();
+
+  if (!data) return NextResponse.json({ found: false });
+  return NextResponse.json({ found: true, ...data });
+}
+
 export async function POST(req: Request) {
   // Coarse per-IP backstop (see lib/ratelimit for the caveat about shared NAT).
   const rl = rateLimit(`join:${clientIp(req)}`, 30, 60_000);

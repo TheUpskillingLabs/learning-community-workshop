@@ -23,10 +23,30 @@ export default function JoinPage() {
       : "/api/public/session";
     fetch(url)
       .then((r) => r.json())
-      .then((d) => {
+      .then(async (d) => {
         setSessionId(d.id ?? null);
         setSessionName(d.name ?? "");
         saveSession(d.id ?? null);
+        // Prefill with this device's earlier answers (upserted server-side on
+        // session_id + participant_id) so coming back doesn't look like a
+        // blank form. Failure just leaves the form empty.
+        if (d.id) {
+          try {
+            const prev = await fetch(
+              `/api/join?session=${encodeURIComponent(d.id)}&participant=${encodeURIComponent(getParticipantId())}`
+            ).then((r) => r.json());
+            if (prev.found) {
+              setHandle(prev.handle ?? "");
+              setValues(
+                Object.fromEntries(
+                  INTAKE_FIELDS.map((f) => [f.key, prev[f.key] ?? ""])
+                )
+              );
+            }
+          } catch {
+            // ignore — prefill is best-effort
+          }
+        }
       })
       .catch(() => setSessionId(null))
       .finally(() => setLoading(false));
