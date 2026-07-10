@@ -41,6 +41,8 @@ export default function AdminPage() {
   const [msg, setMsg] = useState<string | null>(null);
   const [slackDraft, setSlackDraft] = useState("");
   const [keeperDraft, setKeeperDraft] = useState("");
+  const [promptText, setPromptText] = useState<string | null>(null);
+  const [csvDraft, setCsvDraft] = useState("");
 
   // Seed the keep-going link drafts whenever the session loads/changes.
   useEffect(() => {
@@ -168,6 +170,47 @@ export default function AdminPage() {
     const d = await r.json().catch(() => ({}));
     setMsg(r.ok ? `Grouped into ${d.tables} tables.` : d.error ?? "Clustering failed.");
     if (r.ok) loadState(session.id);
+    setBusy(null);
+  }
+
+  async function copyPrompt() {
+    if (!session) return;
+    setBusy("prompt");
+    setMsg(null);
+    try {
+      const r = await fetch(`/api/admin/prompt?session=${encodeURIComponent(session.id)}`);
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) {
+        setMsg(d.error ?? "Could not build the prompt.");
+        return;
+      }
+      setPromptText(d.prompt);
+      try {
+        await navigator.clipboard.writeText(d.prompt);
+        setMsg("Prompt copied — paste it into any AI chat.");
+      } catch {
+        setMsg("Couldn't copy automatically — expand the box below and copy by hand.");
+      }
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function importTables() {
+    if (!session || !csvDraft.trim()) return;
+    setBusy("import");
+    setMsg(null);
+    const r = await fetch("/api/admin/import-tables", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ session_id: session.id, csv: csvDraft }),
+    });
+    const d = await r.json().catch(() => ({}));
+    setMsg(r.ok ? `Grouped into ${d.tables} tables.` : d.error ?? "Import failed.");
+    if (r.ok) {
+      setCsvDraft("");
+      loadState(session.id);
+    }
     setBusy(null);
   }
 
@@ -336,8 +379,46 @@ export default function AdminPage() {
               Re-clustering rebuilds the tables from scratch.
             </p>
             <button onClick={cluster} disabled={busy === "cluster"}>
-              {busy === "cluster" ? "Grouping…" : "Cluster now"}
+              {busy === "cluster" ? "Grouping…" : "Cluster now (AI, needs API key)"}
             </button>
+
+            <p className="muted" style={{ marginTop: 20 }}>
+              No API key wired up? Copy a ready-to-paste prompt into any AI
+              chat (e.g. claude.ai), then paste its CSV reply back below.
+            </p>
+            <button onClick={copyPrompt} disabled={busy === "prompt"}>
+              {busy === "prompt" ? "Building…" : "Copy clustering prompt"}
+            </button>
+            {promptText && (
+              <details style={{ marginTop: 12 }}>
+                <summary className="help">Show the prompt (copy by hand)</summary>
+                <textarea
+                  readOnly
+                  value={promptText}
+                  rows={10}
+                  style={{ marginTop: 8 }}
+                  onFocus={(e) => e.currentTarget.select()}
+                />
+              </details>
+            )}
+            <label htmlFor="csvDraft" style={{ marginTop: 16, display: "block" }}>
+              Paste the AI&apos;s CSV reply
+            </label>
+            <textarea
+              id="csvDraft"
+              rows={8}
+              value={csvDraft}
+              onChange={(e) => setCsvDraft(e.target.value)}
+              placeholder="participant_id,table_code,table_label,rationale"
+            />
+            <div className="row" style={{ marginTop: 12 }}>
+              <button
+                onClick={importTables}
+                disabled={busy === "import" || !csvDraft.trim()}
+              >
+                {busy === "import" ? "Importing…" : "Import tables"}
+              </button>
+            </div>
           </div>
 
           {/* --- Tables --- */}
