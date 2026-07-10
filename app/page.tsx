@@ -24,7 +24,13 @@ export default function Home() {
           Start Your Intake
         </Link>
         <p className="help" style={{ marginTop: 16 }}>
-          <a href="https://theupskillinglabs.org">Join The Labs →</a>
+          <a
+            href="https://theupskillinglabs.org"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Join The Labs →
+          </a>
         </p>
       </div>
     </main>

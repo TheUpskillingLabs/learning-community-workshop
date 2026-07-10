@@ -13,7 +13,13 @@ export function SiteFooter() {
   return (
     <footer className="footer">
       <div className="footer-inner">
-        <a className="footer-logo" href={SITE} aria-label="The Upskilling Labs">
+        <a
+          className="footer-logo"
+          href={SITE}
+          target="_blank"
+          rel="noreferrer"
+          aria-label="The Upskilling Labs"
+        >
           <img src="/brand/logo-lockup-light.png" alt="The Upskilling Labs" />
         </a>
         <p className="footer-brandline">
@@ -21,7 +27,9 @@ export function SiteFooter() {
           playbooks, and lessons, built like open source.
         </p>
         <p className="footer-site">
-          <a href={SITE}>theupskillinglabs.org →</a>
+          <a href={SITE} target="_blank" rel="noreferrer">
+            theupskillinglabs.org →
+          </a>
         </p>
         <div className="footer-partners">
           {PARTNERS.map((p) => (
