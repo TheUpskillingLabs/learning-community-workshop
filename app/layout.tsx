@@ -16,7 +16,7 @@ const geologica = localFont({
 export const metadata: Metadata = {
   title: "Open Learning Community Workshop · The Upskilling Labs",
   description:
-    "Companion app for The Upskilling Labs workshop at the Digital Navigators Summit.",
+    "Companion app for The Upskilling Labs' Open Learning Community workshop at the DMV Digital Navigator Summit, hosted by DC Public Library.",
 };
 
 export const viewport: Viewport = {
