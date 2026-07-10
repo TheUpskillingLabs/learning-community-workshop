@@ -331,6 +331,24 @@ p {
   text-decoration: none;
 }
 
+/* Homepage resources: stacked, tappable links with a divider between each */
+.resource-list {
+  list-style: none;
+  margin: 14px 0 0;
+  padding: 0;
+}
+
+.resource-list li + li {
+  border-top: 1px solid var(--rule);
+}
+
+.resource-list a {
+  display: block;
+  padding: 14px 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
 .table-pick {
   display: flex;
   align-items: baseline;
