@@ -3,13 +3,14 @@ import Link from "next/link";
 export default function Home() {
   return (
     <main className="wrap">
-      <div className="eyebrow eyebrow-teal">Digital Navigator Summit</div>
+      <div className="eyebrow eyebrow-teal">DMV Digital Navigator Summit</div>
       <h1>Building an open learning community</h1>
       <p className="lead">
         The Upskilling Labs is an open learning community where people build
         real skills in emerging technologies by doing real work with real
-        people. Today we&apos;re hosting the Digital Navigator Summit in
-        Washington DC.
+        people. Today — Friday, July 10, 2026 — we&apos;re running our Open
+        Learning Community workshop at the DMV Digital Navigator Summit, hosted
+        by DC Public Library.
       </p>
 
       <div className="card">

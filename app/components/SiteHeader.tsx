@@ -10,7 +10,7 @@ export function SiteHeader() {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/brand/logo-lockup-light.png" alt="The Upskilling Labs" />
         </Link>
-        <span className="nav-context">Digital Navigators Summit</span>
+        <span className="nav-context">DMV Digital Navigator Summit</span>
       </div>
     </header>
   );
