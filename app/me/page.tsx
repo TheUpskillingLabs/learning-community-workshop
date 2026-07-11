@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import type { MePayload } from "@/lib/types";
-import { KeepGoing } from "@/app/components/KeepGoing";
 import { resolveClientSession, withSession } from "@/lib/participant";
 
 const PID_KEY = "olc_participant_id";
@@ -144,10 +143,6 @@ export default function MePage() {
             <Link className="btn secondary" href={withSession("/present")}>
               See all presentations
             </Link>
-          </div>
-
-          <div style={{ marginTop: 28 }}>
-            <KeepGoing keep={me.keep} />
           </div>
         </>
       )}
